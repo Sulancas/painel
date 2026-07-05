@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cyber-Farm-Sulanca · Control</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg:#060911;
+  --surface:#0A0F1C;
+  --surface-alt:#0F1830;
+  --border:#1B3A5C;
+  --border-soft:#132540;
+  --text:#DCEBFF;
+  --text-muted:#6E8AB8;
+  --text-dim:#3E5478;
+  --gold:#00D9FF;
+  --gold-dim:#0A3550;
+  --online:#39FF88;
+  --online-dim:#0E3324;
+  --offline:#4A5F82;
+  --offline-dim:#101C30;
+  --error:#FF3B6B;
+  --error-dim:#3A0F22;
+  --glow: 0 0 10px rgba(0,217,255,.55), 0 0 26px rgba(0,217,255,.18);
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    linear-gradient(180deg, rgba(0,217,255,.05), transparent 40%),
+    repeating-linear-gradient(0deg, rgba(0,217,255,.035) 0px, rgba(0,217,255,.035) 1px, transparent 1px, transparent 36px),
+    repeating-linear-gradient(90deg, rgba(0,217,255,.035) 0px, rgba(0,217,255,.035) 1px, transparent 1px, transparent 36px),
+    var(--bg);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  padding:32px 24px 80px;
+}
+
+.mono{font-family:'JetBrains Mono',monospace;}
+
+/* ---------- Header ---------- */
+header{
+  max-width:1280px;
+  margin:0 auto 28px;
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:20px;
+  border-bottom:1px solid var(--border-soft);
+  padding-bottom:20px;
+}
+.eyebrow{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--gold);
+  margin:0 0 6px;
+  text-shadow:0 0 12px rgba(0,217,255,.7);
+}
+h1{
+  font-size:26px;
+  margin:0;
+  font-weight:700;
+  letter-spacing:-0.01em;
+  text-shadow:0 0 18px rgba(0,217,255,.25);
+}
+.header-actions{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+
+input[type=number], select{
+  background:var(--surface-alt);
+  border:1px solid var(--border);
+  color:var(--text);
+  border-radius:6px;
+  padding:9px 12px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;
+  outline:none;
+}
+input[type=number]{width:90px;}
+input[type=number]:focus, select:focus{border-color:var(--gold); box-shadow:var(--glow);}
+
+button{
+  cursor:pointer;
+  border:1px solid var(--border);
+  background:var(--surface-alt);
+  color:var(--text);
+  border-radius:6px;
+  padding:9px 14px;
+  font-family:'Inter',sans-serif;
+  font-size:13px;
+  font-weight:600;
+  transition:border-color .15s, background .15s, box-shadow .15s;
+}
+button:hover{border-color:var(--gold); box-shadow:0 0 12px rgba(0,217,255,.35);}
+button:active{transform:translateY(1px);}
+button:disabled{opacity:.4; cursor:default; box-shadow:none;}
+button.primary{background:var(--gold); border-color:var(--gold); color:#001420; box-shadow:var(--glow);}
+button.primary:hover{background:#33E3FF; box-shadow:0 0 16px rgba(0,217,255,.75), 0 0 34px rgba(0,217,255,.3);}
+button.danger{border-color:var(--error);}
+button.danger:hover{background:var(--error-dim); box-shadow:0 0 12px rgba(255,59,107,.4);}
+button.ghost{background:transparent;}
+button.small{padding:6px 10px; font-size:12px;}
+
+/* ---------- Grid ---------- */
+.grid{
+  max-width:1280px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(360px, 1fr));
+  gap:18px;
+}
+
+.empty{
+  max-width:1280px; margin:60px auto; text-align:center;
+  color:var(--text-muted);
+}
+.empty .mono{color:var(--text-dim); font-size:13px;}
+
+/* ---------- Card ---------- */
+.card{
+  background:var(--surface);
+  border:1px solid var(--border-soft);
+  border-radius:10px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  box-shadow:0 0 0 rgba(0,0,0,0);
+  transition:box-shadow .2s, border-color .2s;
+}
+.card:hover{border-color:var(--border); box-shadow:0 0 24px rgba(0,217,255,.08);}
+
+.vitals{
+  height:3px;
+  width:100%;
+  background:var(--border-soft);
+  position:relative;
+  overflow:hidden;
+}
+.vitals.running{background:rgba(0,217,255,.15); box-shadow:0 0 10px rgba(0,217,255,.5);}
+.vitals.running::after{
+  content:'';
+  position:absolute; top:0; left:0; height:100%; width:40%;
+  background:linear-gradient(90deg, transparent, var(--gold), transparent);
+  box-shadow:0 0 14px 2px rgba(0,217,255,.9);
+  animation:sweep 1.8s linear infinite;
+}
+.vitals.error::after{
+  content:'';
+  position:absolute; top:0; left:0; height:100%; width:100%;
+  background:var(--error);
+  box-shadow:0 0 10px rgba(255,59,107,.7);
+}
+@keyframes sweep{
+  0%{left:-40%;}
+  100%{left:100%;}
+}
+
+.card-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 16px 10px;
+}
+.port-num{
+  font-size:22px;
+  font-weight:700;
+  letter-spacing:-0.02em;
+  color:var(--gold);
+  text-shadow:0 0 12px rgba(0,217,255,.5);
+}
+.port-label{font-size:10px; color:var(--text-dim); letter-spacing:.08em; text-transform:uppercase;}
+
+.pill{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;
+  padding:3px 9px;
+  border-radius:100px;
+  font-weight:600;
+  letter-spacing:.03em;
+  white-space:nowrap;
+}
+.pill.online{background:var(--online-dim); color:var(--online); box-shadow:0 0 10px rgba(57,255,136,.35); border:1px solid rgba(57,255,136,.3);}
+.pill.offline{background:var(--offline-dim); color:var(--offline);}
+.pill.error{background:var(--error-dim); color:var(--error); box-shadow:0 0 10px rgba(255,59,107,.3); border:1px solid rgba(255,59,107,.3);}
+
+.card-body{padding:2px 16px 14px; display:flex; flex-direction:column; gap:12px;}
+
+.char-row{
+  display:flex; justify-content:space-between; align-items:baseline;
+  font-size:13px; color:var(--text-muted);
+}
+.char-name{color:var(--text); font-weight:600;}
+
+.bars{display:flex; flex-direction:column; gap:6px;}
+.bar-row{display:flex; align-items:center; gap:8px;}
+.bar-label{font-size:10px; width:22px; color:var(--text-dim); font-family:'JetBrains Mono',monospace;}
+.bar-track{flex:1; height:7px; background:var(--surface-alt); border-radius:4px; overflow:hidden;}
+.bar-fill{height:100%; border-radius:4px; transition:width .4s;}
+.bar-fill.hp{background:var(--online); box-shadow:0 0 8px rgba(57,255,136,.6);}
+.bar-fill.sp{background:#2FB8FF; box-shadow:0 0 8px rgba(47,184,255,.6);}
+.bar-fill.weight{background:var(--gold); box-shadow:0 0 8px rgba(0,217,255,.6);}
+.bar-val{font-size:10px; color:var(--text-dim); width:70px; text-align:right; font-family:'JetBrains Mono',monospace;}
+
+.meta-row{display:flex; gap:14px; flex-wrap:wrap; font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace;}
+
+.zeny-rate-row{align-items:center; justify-content:space-between; gap:8px;}
+.zeny-rate{font-weight:600; color:var(--text-muted);}
+.zeny-rate.pos{color:var(--online);}
+.zeny-rate.neg{color:var(--error);}
+.zeny-rate-row button{padding:3px 8px; font-size:10px; color:var(--text-dim); border-color:var(--border-soft);}
+.zeny-rate-row button:hover{color:var(--gold); border-color:var(--gold);}
+
+.divider{border-top:1px solid var(--border-soft); margin:2px 0;}
+
+.action-row{display:flex; gap:8px;}
+.action-row button{flex:1;}
+
+.config-row{display:flex; gap:8px; align-items:center;}
+.config-row select{flex:1;}
+
+.logs-toggle{
+  background:transparent; border:none; color:var(--text-muted);
+  font-size:12px; padding:4px 0; text-align:left; font-weight:600;
+  display:flex; align-items:center; gap:6px;
+}
+.logs-toggle:hover{color:var(--gold); border:none;}
+.chevron{transition:transform .15s; font-size:10px;}
+.chevron.open{transform:rotate(90deg);}
+
+.logs-panel{display:none; flex-direction:column; gap:8px;}
+.logs-panel.open{display:flex;}
+.logs-tabs{display:flex; gap:6px;}
+.logs-tabs button{flex:1; padding:6px; font-size:11px;}
+.logs-tabs button.active{background:var(--gold-dim); border-color:var(--gold); color:var(--gold);}
+.log-view{
+  background:#020509;
+  border:1px solid var(--border-soft);
+  border-radius:6px;
+  padding:8px 10px;
+  height:140px;
+  overflow-y:auto;
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;
+  color:#7FE8FF;
+  white-space:pre-wrap;
+  line-height:1.5;
+  box-shadow:inset 0 0 20px rgba(0,217,255,.05);
+}
+.log-view .empty-log{color:var(--text-dim); font-style:italic;}
+
+.remove-btn{
+  background:transparent; border:none; color:var(--text-dim);
+  font-size:16px; padding:2px 6px; line-height:1;
+}
+.remove-btn:hover{color:var(--error); border:none;}
+
+.card-footer{
+  padding:10px 16px;
+  border-top:1px solid var(--border-soft);
+  font-size:10px; color:var(--text-dim);
+  font-family:'JetBrains Mono',monospace;
+  display:flex; justify-content:space-between;
+}
+
+@media (max-width:480px){
+  .grid{grid-template-columns:1fr;}
+  header{flex-direction:column; align-items:flex-start;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <p class="eyebrow">Cyber-Farm-Sulanca · Multi-instância</p>
+    <h1>Painel de controle</h1>
+  </div>
+  <div class="header-actions">
+    <input type="number" id="portInput" placeholder="porta" min="1" max="65535">
+    <button class="ghost" id="addBtn">Adicionar instância</button>
+    <button class="primary" id="scanBtn">Escanear 8001–8020</button>
+  </div>
+</header>
+
+<div id="empty" class="empty" style="display:none;">
+  <p>Nenhuma instância adicionada.</p>
+  <p class="mono">Clique em "Escanear 8001–8020" ou adicione uma porta manualmente.</p>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+const API_TIMEOUT = 4000;
+const POLL_INTERVAL = 5000;
+
+// instances: Map<port, state>
+const instances = new Map();
+
+function makeState(port){
+  return {
+    port,
+    reachable: null,      // null = unknown/checking, true/false
+    error: null,
+    status: null,          // last /status payload
+    configs: [],
+    currentConfig: '',
+    busy: false,
+    logsOpen: false,
+    activeLogType: 'log',
+    logLines: [],
+    logsLoading: false,
+    zenyBaseline: null,    // zeny no início da contagem
+    zenyBaselineTime: null,// timestamp (ms) do início da contagem
+  };
+}
+
+function resetZenyTracking(state, zeny){
+  state.zenyBaseline = (typeof zeny === 'number') ? zeny : null;
+  state.zenyBaselineTime = Date.now();
+}
+
+function zenyPerHour(state){
+  const s = state.status;
+  if(!s || typeof s.zeny !== 'number' || state.zenyBaseline === null) return null;
+  const elapsedHours = (Date.now() - state.zenyBaselineTime) / 3600000;
+  if(elapsedHours < (10/3600)) return null; // menos de ~10s de amostra ainda
+  return (s.zeny - state.zenyBaseline) / elapsedHours;
+}
+
+async function apiFetch(port, path, opts={}){
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), API_TIMEOUT);
+  try{
+    const res = await fetch(`http://localhost:${port}${path}`, {
+      ...opts,
+      signal: controller.signal,
+      headers: opts.body ? { 'Content-Type': 'application/json', ...(opts.headers||{}) } : opts.headers,
+    });
+    clearTimeout(timer);
+    let data = null;
+    try { data = await res.json(); } catch(e) { /* body vazio ou não-JSON */ }
+    return { ok: res.ok, status: res.status, data };
+  }catch(e){
+    clearTimeout(timer);
+    return { ok:false, status:0, data:null, networkError:true, message: e.message };
+  }
+}
+
+function render(){
+  const grid = document.getElementById('grid');
+  const empty = document.getElementById('empty');
+  if(instances.size === 0){
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const sortedPorts = Array.from(instances.keys()).sort((a,b)=>a-b);
+  grid.innerHTML = sortedPorts.map(port => cardHtml(instances.get(port))).join('');
+
+  sortedPorts.forEach(port => wireCard(port));
+}
+
+function pillFor(state){
+  if(state.reachable === null) return { cls:'offline', label:'verificando…' };
+  if(state.reachable === false) return { cls:'error', label: state.error === 'unauthorized' ? 'sem assinatura' : 'sem conexão' };
+  if(state.status && state.status.running) return { cls:'online', label:'rodando' };
+  return { cls:'offline', label:'parado' };
+}
+
+function vitalsClass(state){
+  if(state.reachable === false) return 'error';
+  if(state.status && state.status.running) return 'running';
+  return '';
+}
+
+function pct(cur, max){
+  if(!max) return 0;
+  return Math.max(0, Math.min(100, (cur/max)*100));
+}
+
+function cardHtml(state){
+  const pill = pillFor(state);
+  const s = state.status;
+  const hasChar = s && s.name;
+
+  const configOptions = state.configs.length
+    ? state.configs.map(c => `<option value="${escapeHtml(c)}" ${c===state.currentConfig?'selected':''}>${escapeHtml(c)}</option>`).join('')
+    : `<option value="">${state.reachable ? 'sem rotinas' : '—'}</option>`;
+
+  return `
+  <div class="card" data-port="${state.port}">
+    <div class="vitals ${vitalsClass(state)}"></div>
+    <div class="card-head">
+      <div>
+        <div class="port-label mono">porta</div>
+        <div class="port-num mono">${state.port}</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span class="pill ${pill.cls}">${pill.label}</span>
+        <button class="remove-btn" data-action="remove" title="Remover instância">✕</button>
+      </div>
+    </div>
+    <div class="card-body">
+      ${hasChar ? `
+        <div class="char-row">
+          <span class="char-name">${escapeHtml(s.name)} <span style="color:var(--text-dim)">· ${escapeHtml(s.className||'?')}</span></span>
+          <span class="mono">Lv.${s.level ?? '—'} / Job ${s.jobLevel ?? '—'}</span>
+        </div>
+        <div class="bars">
+          <div class="bar-row">
+            <span class="bar-label">HP</span>
+            <div class="bar-track"><div class="bar-fill hp" style="width:${pct(s.hp,s.maxHp)}%"></div></div>
+            <span class="bar-val">${fmt(s.hp)}/${fmt(s.maxHp)}</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">SP</span>
+            <div class="bar-track"><div class="bar-fill sp" style="width:${pct(s.sp,s.maxSp)}%"></div></div>
+            <span class="bar-val">${fmt(s.sp)}/${fmt(s.maxSp)}</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">Peso</span>
+            <div class="bar-track"><div class="bar-fill weight" style="width:${s.weightPercentage ?? 0}%"></div></div>
+            <span class="bar-val">${s.weightPercentage ?? 0}%</span>
+          </div>
+        </div>
+        <div class="meta-row">
+          <span>mapa: ${escapeHtml(s.map || '—')}</span>
+          <span>zeny: ${fmt(s.zeny)}</span>
+          <span>perfil: ${escapeHtml(s.loginProfile || '—')}</span>
+        </div>
+        <div class="meta-row zeny-rate-row">
+          <span class="zeny-rate ${(() => { const r = zenyPerHour(state); return r === null ? '' : (r < 0 ? 'neg' : 'pos'); })()}">
+            ${(() => {
+              const r = zenyPerHour(state);
+              if(r === null) return 'zeny/h: calculando…';
+              const sign = r >= 0 ? '+' : '';
+              return `zeny/h: ${sign}${fmt(Math.round(r))}`;
+            })()}
+          </span>
+          <button class="small ghost" data-action="reset-zeny" title="Reiniciar contagem de zeny/h">reiniciar contagem</button>
+        </div>
+      ` : `<div class="meta-row"><span>${state.reachable ? 'personagem não logado' : 'aguardando conexão…'}</span></div>`}
+
+      <div class="divider"></div>
+
+      <div class="action-row">
+        <button data-action="start" ${state.busy || !state.reachable ? 'disabled':''}>▶ Iniciar</button>
+        <button data-action="stop" ${state.busy || !state.reachable ? 'disabled':''}>■ Parar</button>
+      </div>
+
+      <div class="config-row">
+        <select data-action="select-config" ${state.busy || !state.reachable ? 'disabled':''}>
+          ${configOptions}
+        </select>
+        <button class="small" data-action="reload-config" title="Recarregar configuração" ${state.busy || !state.reachable ? 'disabled':''}>⟳</button>
+      </div>
+
+      <button class="logs-toggle" data-action="toggle-logs">
+        <span class="chevron ${state.logsOpen?'open':''}">▸</span> Logs
+      </button>
+
+      <div class="logs-panel ${state.logsOpen?'open':''}">
+        <div class="logs-tabs">
+          <button class="small ${state.activeLogType==='log'?'active':''}" data-action="log-tab" data-type="log">Bot</button>
+          <button class="small ${state.activeLogType==='chat'?'active':''}" data-action="log-tab" data-type="chat">Chat</button>
+          <button class="small ${state.activeLogType==='broadcast'?'active':''}" data-action="log-tab" data-type="broadcast">Broadcast</button>
+          <button class="small" data-action="refresh-logs" title="Atualizar">⟳</button>
+        </div>
+        <div class="log-view">${
+          state.logsLoading ? '<span class="empty-log">carregando…</span>' :
+          state.logLines.length ? state.logLines.map(l => escapeHtml(l)).join('\\n') :
+          '<span class="empty-log">sem linhas</span>'
+        }</div>
+      </div>
+    </div>
+    <div class="card-footer">
+      <span>pid: ${s && s.pid ? s.pid : '—'}</span>
+      <span>${state.reachable ? 'atualizado agora' : ''}</span>
+    </div>
+  </div>`;
+}
+
+function fmt(n){
+  if(n === undefined || n === null) return '—';
+  return n.toLocaleString('pt-BR');
+}
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function wireCard(port){
+  const card = document.querySelector(`.card[data-port="${port}"]`);
+  if(!card) return;
+  card.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-action]');
+    if(!btn) return;
+    const action = btn.dataset.action;
+    const state = instances.get(port);
+    if(!state) return;
+
+    if(action === 'remove'){ instances.delete(port); render(); return; }
+    if(action === 'toggle-logs'){
+      state.logsOpen = !state.logsOpen;
+      render();
+      if(state.logsOpen) fetchLogs(port);
+      return;
+    }
+    if(action === 'refresh-logs'){ fetchLogs(port); return; }
+    if(action === 'reset-zeny'){
+      resetZenyTracking(state, state.status ? state.status.zeny : null);
+      render();
+      return;
+    }
+    if(action === 'log-tab'){
+      state.activeLogType = btn.dataset.type;
+      render();
+      fetchLogs(port);
+      return;
+    }
+    if(action === 'reload-config'){
+      state.busy = true; render();
+      await apiFetch(port, '/reload-config', { method:'POST' });
+      state.busy = false;
+      await refreshInstance(port);
+      return;
+    }
+    if(action === 'start'){
+      state.busy = true; render();
+      await apiFetch(port, '/start', { method:'POST' });
+      state.busy = false;
+      resetZenyTracking(state, state.status ? state.status.zeny : null);
+      await refreshInstance(port);
+      return;
+    }
+    if(action === 'stop'){
+      state.busy = true; render();
+      await apiFetch(port, '/stop', { method:'POST' });
+      state.busy = false;
+      await refreshInstance(port);
+      return;
+    }
+  });
+
+  card.querySelector('[data-action="select-config"]')?.addEventListener('change', async (e) => {
+    const state = instances.get(port);
+    const name = e.target.value;
+    if(!name) return;
+    state.busy = true; render();
+    await apiFetch(port, '/select-config', { method:'POST', body: JSON.stringify({ name }) });
+    state.busy = false;
+    await refreshInstance(port);
+  });
+}
+
+async function fetchLogs(port){
+  const state = instances.get(port);
+  if(!state || !state.reachable) return;
+  state.logsLoading = true; render();
+  const res = await apiFetch(port, `/logs?type=${state.activeLogType}&count=100`);
+  state.logsLoading = false;
+  state.logLines = Array.isArray(res.data) ? res.data : [];
+  render();
+}
+
+async function refreshInstance(port){
+  const state = instances.get(port);
+  if(!state) return;
+
+  const statusRes = await apiFetch(port, '/status');
+  if(statusRes.networkError || (!statusRes.ok && statusRes.status === 0)){
+    state.reachable = false;
+    state.error = 'network';
+    render();
+    return;
+  }
+  if(statusRes.status === 503){
+    state.reachable = false;
+    state.error = 'unauthorized';
+    render();
+    return;
+  }
+  if(!statusRes.ok){
+    state.reachable = false;
+    state.error = 'error';
+    render();
+    return;
+  }
+
+  state.reachable = true;
+  state.error = null;
+  state.status = statusRes.data;
+
+  if(state.zenyBaseline === null && typeof state.status?.zeny === 'number'){
+    resetZenyTracking(state, state.status.zeny);
+  }
+
+  const configsRes = await apiFetch(port, '/configs');
+  if(configsRes.ok && configsRes.data){
+    state.configs = configsRes.data.configs || [];
+    state.currentConfig = configsRes.data.current || '';
+  }
+
+  render();
+
+  if(state.logsOpen) fetchLogs(port);
+}
+
+function addInstance(port){
+  port = Number(port);
+  if(!port || instances.has(port)) return;
+  instances.set(port, makeState(port));
+  render();
+  refreshInstance(port);
+}
+
+document.getElementById('addBtn').addEventListener('click', () => {
+  const input = document.getElementById('portInput');
+  const port = input.value;
+  if(port){ addInstance(port); input.value=''; }
+});
+document.getElementById('portInput').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') document.getElementById('addBtn').click();
+});
+
+document.getElementById('scanBtn').addEventListener('click', async (e) => {
+  const btn = e.target;
+  btn.disabled = true;
+  btn.textContent = 'Escaneando…';
+  const checks = [];
+  for(let p = 8001; p <= 8020; p++){
+    checks.push(
+      apiFetch(p, '/status').then(res => {
+        if(res.ok || res.status === 503){
+          addInstance(p);
+        }
+      })
+    );
+  }
+  await Promise.all(checks);
+  btn.disabled = false;
+  btn.textContent = 'Escanear 8001–8020';
+});
+
+// polling
+setInterval(() => {
+  instances.forEach((state, port) => {
+    if(!state.busy) refreshInstance(port);
+  });
+}, POLL_INTERVAL);
+
+render();
+</script>
+
+</body>
+</html>
