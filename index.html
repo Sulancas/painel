@@ -302,15 +302,14 @@ button.small{padding:6px 10px; font-size:12px;}
 const API_TIMEOUT = 5000;
 const POLL_INTERVAL = 5000;
 
-// instances: Map<port, state>
 const instances = new Map();
 
 function makeState(port){
   return {
     port,
-    reachable: null,      // null = unknown/checking, true/false
+    reachable: null,
     error: null,
-    status: null,          // last /status payload
+    status: null,
     configs: [],
     currentConfig: '',
     busy: false,
@@ -318,8 +317,8 @@ function makeState(port){
     activeLogType: 'log',
     logLines: [],
     logsLoading: false,
-    zenyBaseline: null,    // zeny no início da contagem
-    zenyBaselineTime: null,// timestamp (ms) do início da contagem
+    zenyBaseline: null,
+    zenyBaselineTime: null,
   };
 }
 
@@ -342,7 +341,7 @@ function zenyPerHour(state){
   const s = state.status;
   if(!s || typeof s.zeny !== 'number' || state.zenyBaseline === null) return null;
   const elapsedHours = (Date.now() - state.zenyBaselineTime) / 3600000;
-  if(elapsedHours < (10/3600)) return null; // menos de ~10s de amostra ainda
+  if(elapsedHours < (10/3600)) return null;
   return (s.zeny - state.zenyBaseline) / elapsedHours;
 }
 
@@ -351,11 +350,9 @@ async function apiFetch(port, path, opts={}){
   const timer = setTimeout(() => controller.abort(), API_TIMEOUT);
   
   const baseUrl = getBaseUrl();
-  // Se o túnel do ngrok/localtunnel mapear o PC direto (sem subportas na URL externa),
-  // ajustamos o endpoint. Se for localhost, mantemos a porta clássica.
   const finalUrl = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')
     ? `${baseUrl}:${port}${path}`
-    : `${baseUrl}${path}`; // Para túneis que mapeiam 1 link por porta
+    : `${baseUrl}${path}`;
 
   try{
     const res = await fetch(finalUrl, {
@@ -365,7 +362,7 @@ async function apiFetch(port, path, opts={}){
     });
     clearTimeout(timer);
     let data = null;
-    try { data = await res.json(); } catch(e) { /* body vazio ou não-JSON */ }
+    try { data = await res.json(); } catch(e) {}
     return { ok: res.ok, status: res.status, data };
   }catch(e){
     clearTimeout(timer);
@@ -415,6 +412,13 @@ function cardHtml(state){
   const configOptions = state.configs.length
     ? state.configs.map(c => `<option value="${escapeHtml(c)}" ${c===state.currentConfig?'selected':''}>${escapeHtml(c)}</option>`).join('')
     : `<option value="">${state.reachable ? 'sem rotinas' : '—'}</option>`;
+
+  let logContent = '<span class="empty-log">sem linhas</span>';
+  if (state.logsLoading) {
+    logContent = '<span class="empty-log">carregando…</span>';
+  } else if (state.logLines.length) {
+    logContent = state.logLines.map(l => escapeHtml(l)).join('<br>');
+  }
 
   return `
   <div class="card" data-port="${state.port}">
@@ -495,11 +499,7 @@ function cardHtml(state){
           <button class="small ${state.activeLogType==='broadcast'?'active':''}" data-action="log-tab" data-type="broadcast">Broadcast</button>
           <button class="small" data-action="refresh-logs" title="Atualizar">⟳</button>
         </div>
-        <div class="log-view">${
-          state.logsLoading ? '<span class="empty-log">carregando…</span>' :
-          state.logLines.length ? state.logLines.map(l => escapeHtml(l)).join('\n') :
-          '<span class="empty-log">sem linhas</span>'
-        }</div>
+        <div class="log-view">${logContent}</div>
       </div>
     </div>
     <div class="card-footer">
@@ -670,7 +670,6 @@ document.getElementById('scanBtn').addEventListener('click', async (e) => {
   btn.textContent = 'Escanear 8001–8020';
 });
 
-// polling
 setInterval(() => {
   instances.forEach((state, port) => {
     if(!state.busy) refreshInstance(port);
